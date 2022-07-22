@@ -6,27 +6,56 @@ on:
       - sdx
 
 jobs:
-  deploy:
-    name: Deploy
+  deploy-sdx:
+    name: Deploy to sdx
     runs-on: ubuntu-latest
+    environment:
+      name: sdx
 
     strategy:
       matrix:
         node-version: [16.x]
 
     steps:
+      - id: commit
+        uses: pr-mpt/actions-commit-hash@v1
+
       - uses: actions/checkout@v1
-      - name: Uses Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v1
+        name: Uses Node.js ${{matrix.node-version}}
+
+      - uses: actions/setup-node@v1
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: ${{matrix.node-version}}
 
       - name: Build
         id: build
         env:
           NODE_ENV: development
         run: |
-          echo "Creating google application credentials json file"
-          echo ${{secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON}}
-          echo ${{secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON}} > google-application-credentials.json
-          cat google-application-credentials.json
+          npm install
+          npm run build
+
+      - id: "auth"
+        name: "Authenticate to Google Cloud"
+        uses: "google-github-actions/auth@v0"
+        with:
+          credentials_json: "${{secrets.GOOGLE_CREDENTIALS}}"
+
+      - name: Upload build files
+        id: "upload-files"
+        uses: "google-github-actions/upload-cloud-storage@v0"
+        with:
+          path: "dist"
+          destination: "${{secrets.BUCKET_NAME}}/${{secrets.PROJECT_NAME}}/${{steps.commit.outputs.hash}}"
+          parent: false
+
+      - name: Update importmap
+        run: |
+          curl --location --request PATCH '${{secrets.DEPLOYER_HOST}}/services?env=${{secrets.DEPLOYER_LOCATION}}' \
+          -u ${{secrets.DEPLOYER_USERNAME}}:${{secrets.DEPLOYER_PASSWORD}} \
+          --header 'Accept: application/json' \
+          --header 'Content-Type: application/json' \
+          --data-raw ' {
+            "service":"@${{secrets.BUCKET_NAME}}/${{secrets.PROJECT_NAME}}",
+            "url":"https://storage.googleapis.com/${{secrets.BUCKET_NAME}}/${{secrets.PROJECT_NAME}}/${{steps.commit.outputs.hash}}/${{secrets.BUCKET_NAME}}-${{secrets.PROJECT_NAME}}.js"
+          }'
