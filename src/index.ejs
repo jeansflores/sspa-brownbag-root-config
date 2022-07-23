@@ -44,15 +44,7 @@
 
     More information about shared dependencies can be found at https://single-spa.js.org/docs/recommended-setup#sharing-with-import-maps.
   -->
-    <script type="systemjs-importmap">
-      {
-        "imports": {
-          "single-spa": "https://cdn.jsdelivr.net/npm/single-spa@5.9.0/lib/system/single-spa.min.js",
-          "react": "https://unpkg.com/react@17.0.2/umd/react.development.js",
-          "react-dom": "https://unpkg.com/react-dom@17.0.2/umd/react-dom.development.js"
-        }
-      }
-    </script>
+
     <link
       rel="preload"
       href="https://cdn.jsdelivr.net/npm/single-spa@5.9.0/lib/system/single-spa.min.js"
@@ -66,6 +58,9 @@
     <script type="systemjs-importmap">
       {
         "imports": {
+          "single-spa": "https://cdn.jsdelivr.net/npm/single-spa@5.9.0/lib/system/single-spa.min.js",
+          "react": "https://unpkg.com/react@17.0.2/umd/react.development.js",
+          "react-dom": "https://unpkg.com/react-dom@17.0.2/umd/react-dom.development.js"
           "@single-spa/welcome": "https://unpkg.com/single-spa-welcome/dist/single-spa-welcome.js",
           "@sspa-brownbag/root-config": "//localhost:9000/sspa-brownbag-root-config.js",
           "@sspa-brownbag/navbar": "//localhost:9001/sspa-brownbag-navbar.js",
@@ -74,6 +69,11 @@
         }
       }
     </script>
+    <% } else { %>
+    <script
+      type="systemjs-importmap"
+      src="https://storage.googleapis.com/sspa-brownbag/import-map.json"
+    ></script>
     <% } %>
 
     <!--
