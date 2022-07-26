@@ -27,12 +27,16 @@ jobs:
         with:
           node-version: ${{matrix.node-version}}
 
-      - name: Build
-        id: build
+      - name: Install
+        id: isntall
         env:
           NODE_ENV: development
         run: |
           npm install
+
+      - name: Build
+        id: build
+        run: |
           npm run build
 
       - id: "auth"
