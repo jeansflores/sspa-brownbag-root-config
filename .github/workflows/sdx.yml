@@ -17,43 +17,51 @@ jobs:
         node-version: [16.x]
 
     steps:
-      - id: commit
-        uses: pr-mpt/actions-commit-hash@v1
+      - name: Uses Node.js ${{matrix.node-version}}
+        uses: actions/checkout@v1
 
-      - uses: actions/checkout@v1
-        name: Uses Node.js ${{matrix.node-version}}
-
-      - uses: actions/setup-node@v1
+      - name: Setup Node
+        uses: actions/setup-node@v1
         with:
           node-version: ${{matrix.node-version}}
 
-      - name: Install
-        id: isntall
+      - name: Run Install
+        id: install
         env:
           NODE_ENV: development
-        run: |
-          npm install
+        run: npm install
 
-      - name: Build
+      - name: Run Lint
+        id: lint
+        run: npm run lint
+
+      - name: Run Prettier
+        id: prettier
+        run: npm run check-format
+
+      - name: Run Jest
+        id: test
+        run: npm run test
+
+      - name: Run Build
         id: build
-        run: |
-          npm run build
+        run: npm run build
 
-      - id: "auth"
-        name: "Authenticate to Google Cloud"
+      - name: Authenticate to Google Cloud
+        id: auth
         uses: "google-github-actions/auth@v0"
         with:
           credentials_json: "${{secrets.GOOGLE_CREDENTIALS}}"
 
       - name: Upload build files
-        id: "upload-files"
+        id: upload-files
         uses: "google-github-actions/upload-cloud-storage@v0"
         with:
           path: "dist"
-          destination: "${{secrets.BUCKET_NAME}}/${{secrets.PROJECT_NAME}}/${{steps.commit.outputs.hash}}"
+          destination: "${{secrets.BUCKET_NAME}}/${{secrets.PROJECT_NAME}}/${{github.sha}}"
           parent: false
 
-      - name: Update importmap
+      - name: Update import-map
         run: |
           curl --location --request PATCH '${{secrets.DEPLOYER_HOST}}/services?env=${{secrets.DEPLOYER_LOCATION}}' \
           -u ${{secrets.DEPLOYER_USERNAME}}:${{secrets.DEPLOYER_PASSWORD}} \
@@ -61,5 +69,5 @@ jobs:
           --header 'Content-Type: application/json' \
           --data-raw ' {
             "service":"@${{secrets.BUCKET_NAME}}/${{secrets.PROJECT_NAME}}",
-            "url":"https://storage.googleapis.com/${{secrets.BUCKET_NAME}}/${{secrets.PROJECT_NAME}}/${{steps.commit.outputs.hash}}/${{secrets.BUCKET_NAME}}-${{secrets.PROJECT_NAME}}.js"
+            "url":"${{secrets.GCP_STORAGE_HOST}}/${{secrets.BUCKET_NAME}}/${{secrets.PROJECT_NAME}}/${{github.sha}}/${{secrets.BUCKET_NAME}}-${{secrets.PROJECT_NAME}}.js"
           }'
